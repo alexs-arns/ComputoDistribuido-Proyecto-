@@ -1,0 +1,123 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: sans-serif;
+    background-color: whitesmoke;
+    color: black;
+    margin: 0;
+    padding: 20px;
+    text-align: center;
+}
+
+header {
+    background-color: black;
+    color: white;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: white;
+    border: 1px solid gray;
+    padding: 20px;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid gray;
+    background-color: gainsboro;
+    cursor: pointer;
+}
+
+.tab-btn.active {
+    background-color: white;
+    border-bottom: 2px solid black;
+    font-weight: bold;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Tablas */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th, td {
+    border: 1px solid gray;
+    padding: 8px;
+    text-align: center;
+}
+
+th {
+    background-color: gainsboro;
+}
+
+/* Formularios y Botones */
+.action-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+input[type="text"] {
+    padding: 8px;
+    border: 1px solid gray;
+}
+
+button.action-btn {
+    padding: 8px 15px;
+    background-color: white;
+    border: 1px solid black;
+    cursor: pointer;
+}
+
+/* Estado / Semáforo */
+.badge {
+    padding: 2px 6px;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.badge.safe { background-color: green; }
+.badge.danger { background-color: red; }
+.badge.warning { background-color: orange; color: black; }
+
+.result-box {
+    margin-top: 15px;
+    padding: 10px;
+    border: 2px solid gray;
+    display: none;
+}
+
+.result-box.success {
+    border-color: green;
+    color: green;
+}
+
+.result-box.error {
+    border-color: red;
+    color: red;
+}

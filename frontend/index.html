@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto Computo Distribuido - 0267963</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>CyberSec Orchestrator Dashboard</h1>
+    </header>
+
+    <div class="container">
+        <!-- Pestañas -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab(event, 'tab-dashboard')">Dashboard</button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-dlp')">Escaneo DLP</button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-malware')">Escaneo Malware</button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-hardening')">Hardening</button>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="tab-dashboard" class="tab-content active">
+            <h2>Estado de las Máquinas</h2>
+            <button class="action-btn" onclick="loadMachines()">Actualizar Datos</button>
+            <table id="machines-table">
+                <thead>
+                    <tr>
+                        <th>Machine ID</th>
+                        <th>Estado (Bloqueo)</th>
+                        <th>Datos Confidenciales (DLP)</th>
+                        <th>Estado Hardening</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Inyección  datos JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pestaña - Escaneo DLP -->
+        <div id="tab-dlp" class="tab-content">
+            <h2>Prevención de Pérdida de Datos (DLP)</h2>
+            <p>Busca números de tarjetas de crédito no enmascarados en los archivos de la máquina.</p>
+            <div class="action-group">
+                <input type="text" id="dlp-machine-id" placeholder="Ej: machine_1" value="machine_1">
+                <button class="action-btn" onclick="runScan('dlp')">Iniciar Escaneo DLP</button>
+            </div>
+            <div id="dlp-result" class="result-box"></div>
+        </div>
+
+        <!-- Pestaña - Escaneo Malware -->
+        <div id="tab-malware" class="tab-content">
+            <h2>Escaneo de Malware (SHA-256)</h2>
+            <p>Verifica si existen archivos maliciosos comparando sus firmas criptográficas.</p>
+            <div class="action-group">
+                <input type="text" id="malware-machine-id" placeholder="Ej: machine_1" value="machine_1">
+                <button class="action-btn" onclick="runScan('malware')">Iniciar Escaneo Malware</button>
+            </div>
+            <div id="malware-result" class="result-box"></div>
+        </div>
+
+        <!-- Pestaña - Hardening -->
+        <div id="tab-hardening" class="tab-content">
+            <h2>Auditoría y Corrección de Hardening</h2>
+            <p>Verifica y corrige automáticamente configuraciones inseguras en el archivo config.json.</p>
+            <div class="action-group">
+                <input type="text" id="hardening-machine-id" placeholder="Ej: machine_2" value="machine_2">
+                <button class="action-btn" onclick="runHardening()">Aplicar Hardening</button>
+            </div>
+            <div id="hardening-result" class="result-box"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+
+        // Lógica de Pestañas
+        function openTab(evt, tabId) {
+            const tabContents = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            const tabBtns = document.getElementsByClassName("tab-btn");
+            for (let i = 0; i < tabBtns.length; i++) {
+                tabBtns[i].classList.remove("active");
+            }
+            document.getElementById(tabId).classList.add("active");
+            evt.currentTarget.classList.add("active");
+            
+            // Si abrimos el dashboard, cargamos los datos
+            if(tabId === 'tab-dashboard') {
+                loadMachines();
+            }
+        }
+
+        // Cargar Máquinas
+        async function loadMachines() {
+            const tbody = document.querySelector("#machines-table tbody");
+            tbody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
+            try {
+                const response = await fetch(`${API_BASE}/machines`);
+                if (!response.ok) throw new Error("No se pudo conectar con el API");
+                const machines = await response.json();
+                
+                tbody.innerHTML = '';
+                machines.forEach(m => {
+                    const blockBadge = m.is_blocked ? '<span class="badge danger">Bloqueada</span>' : '<span class="badge safe">Activa</span>';
+                    const dlpBadge = m.has_confidential_data ? '<span class="badge danger">Detectados</span>' : '<span class="badge safe">Limpio</span>';
+                    
+                    let hardBadge = '<span class="badge warning">Pendiente</span>';
+                    if(m.hardening_status === 'OK') hardBadge = '<span class="badge safe">OK</span>';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${m.id}</strong></td>
+                            <td>${blockBadge}</td>
+                            <td>${dlpBadge}</td>
+                            <td>${hardBadge}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = '<tr><td colspan="4" style="color:red;">Error al cargar las máquinas. Revisa que el backend esté corriendo.</td></tr>';
+            }
+        }
+
+        // Ejecutar Escaneos
+        async function runScan(type) {
+            const machineId = document.getElementById(`${type}-machine-id`).value;
+            const resultBox = document.getElementById(`${type}-result`);
+            resultBox.style.display = 'block';
+            resultBox.className = 'result-box'; // Reset classes
+            resultBox.innerHTML = 'Escaneando... por favor espera.';
+
+            try {
+                const response = await fetch(`${API_BASE}/scan/${type}/${machineId}`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.detected) {
+                    resultBox.classList.add('error');
+                } else {
+                    resultBox.classList.add('success');
+                }
+                
+                resultBox.innerHTML = `<strong>Resultado:</strong> ${data.message} <br>
+                                       <small>Archivos analizados: ${data.scanned_files ? data.scanned_files.join(', ') : 'Ninguno'}</small>`;
+                
+            } catch (error) {
+                resultBox.classList.add('error');
+                resultBox.innerHTML = `Error de conexión: No se pudo completar el escaneo.`;
+            }
+        }
+
+        // Ejecutar Hardening
+        async function runHardening() {
+            const machineId = document.getElementById('hardening-machine-id').value;
+            const resultBox = document.getElementById('hardening-result');
+            resultBox.style.display = 'block';
+            resultBox.className = 'result-box';
+            resultBox.innerHTML = 'Auditando y aplicando políticas...';
+
+            try {
+                const response = await fetch(`${API_BASE}/hardening/${machineId}`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                resultBox.classList.add('success');
+                resultBox.innerHTML = `<strong>Resultado:</strong> ${data.message}`;
+                
+            } catch (error) {
+                resultBox.classList.add('error');
+                resultBox.innerHTML = `Error de conexión: No se pudo aplicar el Hardening.`;
+            }
+        }
+
+        // Cargar máquinas al iniciar
+        window.onload = loadMachines;
+    </script>
+</body>
+</html>

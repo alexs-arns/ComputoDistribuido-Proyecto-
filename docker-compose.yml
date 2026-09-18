@@ -1,0 +1,213 @@
+networks:
+  c2_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
+services:
+  # 1. Base de Datos (PostgreSQL)
+  postgres:
+    image: postgres:15-alpine
+    container_name: c2_postgres
+    environment:
+      POSTGRES_USER: c2_user
+      POSTGRES_PASSWORD: c2_password
+      POSTGRES_DB: c2_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - c2_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U c2_user -d c2_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Servicio Machines - Réplica 1
+  machines-1:
+    build: ./service_machines
+    container_name: machines-1
+    environment:
+      INSTANCE_ID: machines-1
+      DB_HOST: postgres
+      DB_USER: c2_user
+      DB_PASSWORD: c2_password
+      DB_NAME: c2_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - c2_network
+
+  # 3. Servicio Machines - Réplica 2
+  machines-2:
+    build: ./service_machines
+    container_name: machines-2
+    environment:
+      INSTANCE_ID: machines-2
+      DB_HOST: postgres
+      DB_USER: c2_user
+      DB_PASSWORD: c2_password
+      DB_NAME: c2_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - c2_network
+
+  # 4. Servicio Machines - Réplica 3
+  machines-3:
+    build: ./service_machines
+    container_name: machines-3
+    environment:
+      INSTANCE_ID: machines-3
+      DB_HOST: postgres
+      DB_USER: c2_user
+      DB_PASSWORD: c2_password
+      DB_NAME: c2_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - c2_network
+
+  # 5. Servicio Hardening - Réplica 1
+  hardening-1:
+    build: ./service_hardening
+    container_name: hardening-1
+    environment:
+      INSTANCE_ID: hardening-1
+      DB_HOST: postgres
+      DB_USER: c2_user
+      DB_PASSWORD: c2_password
+      DB_NAME: c2_db
+    volumes:
+      - ./data_machines:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - c2_network
+
+  # 6. Servicio Hardening - Réplica 2
+  hardening-2:
+    build: ./service_hardening
+    container_name: hardening-2
+    environment:
+      INSTANCE_ID: hardening-2
+      DB_HOST: postgres
+      DB_USER: c2_user
+      DB_PASSWORD: c2_password
+      DB_NAME: c2_db
+    volumes:
+      - ./data_machines:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - c2_network
+
+  # 7. Servicio Hardening - Réplica 3
+  hardening-3:
+    build: ./service_hardening
+    container_name: hardening-3
+    environment:
+      INSTANCE_ID: hardening-3
+      DB_HOST: postgres
+      DB_USER: c2_user
+      DB_PASSWORD: c2_password
+      DB_NAME: c2_db
+    volumes:
+      - ./data_machines:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - c2_network
+
+  # 8. Servicio Scan - Réplica 1
+  scan-1:
+    build: ./service_scan
+    container_name: scan-1
+    environment:
+      INSTANCE_ID: scan-1
+      DB_HOST: postgres
+      DB_USER: c2_user
+      DB_PASSWORD: c2_password
+      DB_NAME: c2_db
+    volumes:
+      - ./data_machines:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - c2_network
+
+  # 9. Servicio Scan - Réplica 2
+  scan-2:
+    build: ./service_scan
+    container_name: scan-2
+    environment:
+      INSTANCE_ID: scan-2
+      DB_HOST: postgres
+      DB_USER: c2_user
+      DB_PASSWORD: c2_password
+      DB_NAME: c2_db
+    volumes:
+      - ./data_machines:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - c2_network
+
+  # 10. Servicio Scan - Réplica 3
+  scan-3:
+    build: ./service_scan
+    container_name: scan-3
+    environment:
+      INSTANCE_ID: scan-3
+      DB_HOST: postgres
+      DB_USER: c2_user
+      DB_PASSWORD: c2_password
+      DB_NAME: c2_db
+    volumes:
+      - ./data_machines:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - c2_network
+
+  # 11. Middleware / API Gateway
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    ports:
+      - "8000:8000"
+    depends_on:
+      - machines-1
+      - machines-2
+      - machines-3
+      - hardening-1
+      - hardening-2
+      - hardening-3
+      - scan-1
+      - scan-2
+      - scan-3
+    networks:
+      - c2_network
+
+  # 12. Frontend
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway
+    networks:
+      - c2_network

@@ -1,0 +1,2 @@
+Log de sistema estandar.
+Sin datos sensibles detectables ni firmas maliciosas.

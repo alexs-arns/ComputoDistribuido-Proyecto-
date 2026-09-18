@@ -1,0 +1,26 @@
+[
+  {
+    "prefix": "/api/machines",
+    "targets": [
+      "http://machines-1:8080",
+      "http://machines-2:8080",
+      "http://machines-3:8080"
+    ]
+  },
+  {
+    "prefix": "/api/hardening",
+    "targets": [
+      "http://hardening-1:8080",
+      "http://hardening-2:8080",
+      "http://hardening-3:8080"
+    ]
+  },
+  {
+    "prefix": "/api/scan",
+    "targets": [
+      "http://scan-1:8080",
+      "http://scan-2:8080",
+      "http://scan-3:8080"
+    ]
+  }
+]

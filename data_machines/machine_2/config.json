@@ -1,0 +1,8 @@
+{
+  "machine_id": "machine_2",
+  "os": "Fedora 44",
+  "antivirus": "Disabled",
+  "firewall": "Inactive",
+  "ssh_root_login": "Enabled",
+  "auto_update": "Disabled"
+}
